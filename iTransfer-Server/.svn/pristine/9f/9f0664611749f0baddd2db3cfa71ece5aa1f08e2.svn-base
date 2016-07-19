@@ -1,0 +1,130 @@
+package cn.edu.sdust.cise.itransfer.service.impl;
+
+import cn.edu.sdust.cise.itransfer.dao.FileLogDao;
+import cn.edu.sdust.cise.itransfer.dao.impl.FileLogDaoImpl;
+import cn.edu.sdust.cise.itransfer.domain.FileLog;
+import cn.edu.sdust.cise.itransfer.utils.ConfigUtil;
+import cn.edu.sdust.cise.itransfer.utils.JdbcUtils;
+
+import java.io.File;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
+
+/**文件Service
+ * Created by 宇强 on 2016/4/30 0030.
+ */
+public class FileServiceImpl {
+
+    private FileLogDao fileLogDao = new FileLogDaoImpl();
+
+    /**上传文件
+     * @param fileLogs
+     * @return
+     */
+    public List<FileLog> uploadFile(List<FileLog> fileLogs) {
+        try {
+            // 设置事务隔离级别
+            JdbcUtils
+                    .setTransactionIsolation(JdbcUtils.TRANSACTION_READ_COMMITTED);
+            // 开启事务
+            JdbcUtils.startTransaction();
+
+            //获取一个过期了的记录进行覆盖
+            List<FileLog> last = fileLogDao.queryFileLogsBySQL("select fid from filelog where time+INTERVAL " + ConfigUtil.getString("filelog.time") + " SECOND<now() limit 0,?;", new Object[]{fileLogs.size()});
+            int filecode = (new Random().nextInt(9)+1) * ConfigUtil.getInt("filecode.length") + last.get(0).getFid();
+            for(int i=0;i<last.size();i++){
+                FileLog fileLog = fileLogs.get(i);
+                fileLog.setFid(last.get(i).getFid());
+                //生成所有文件共用filecode，根据fid确定唯一性
+
+                fileLog.setFilecode(filecode);
+                fileLog.setTime(new Date());
+            }
+
+
+            //覆盖数据库操作
+            fileLogDao.updateFileLog(fileLogs);
+
+            // 提交事务
+            JdbcUtils.commit();
+
+            return fileLogs;
+        } catch (Exception e) {
+            // 异常回滚
+            JdbcUtils.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            // 关闭连接
+            JdbcUtils.release();
+        }
+    }
+
+    /**
+     * 初始化数据库
+     */
+    public void initDatabase() {
+        try {
+            // 设置事务隔离级别
+            JdbcUtils
+                    .setTransactionIsolation(JdbcUtils.TRANSACTION_READ_COMMITTED);
+            // 开启事务
+            JdbcUtils.startTransaction();
+
+            //清空原表
+            fileLogDao.updateBySQL("truncate table filelog", null);
+            //插入配置文件中配置的总文件数
+            FileLog fileLog = new FileLog();
+            for (int i = 0; i < ConfigUtil.getInt("filecode.length"); i++) {
+                fileLog.init(i + "", i + "", i + "", ".ttt", new Date(System.currentTimeMillis() - 100000000), i, "123");
+                fileLogDao.saveFileLog(fileLog);
+            }
+
+            // 提交事务
+            JdbcUtils.commit();
+        } catch (Exception e) {
+            // 异常回滚
+            JdbcUtils.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            // 关闭连接
+            JdbcUtils.release();
+        }
+    }
+
+    /**查询中转文件
+     * @param filecode
+     * @param password
+     * @return
+     */
+    public List<FileLog> queryFile(int filecode,String password) {
+        try {
+            // 设置事务隔离级别
+            JdbcUtils
+                    .setTransactionIsolation(JdbcUtils.TRANSACTION_READ_COMMITTED);
+            // 开启事务
+            JdbcUtils.startTransaction();
+
+            List<FileLog> list = fileLogDao.queryFileLogsBySQL("select * from filelog where filecode=? and password=?;", new Object[]{filecode, password});
+            //中转只有一次性，查询过后，把时间设置过期
+            if(list.size()>0){
+                for(FileLog fileLog:list) {
+                    Date tmp = fileLog.getTime();
+                    fileLog.setTime(new Date(fileLog.getTime().getTime() - 10000000));
+                }
+                fileLogDao.updateFileLog(list);
+                //fileLog.setTime(tmp);
+            }
+            // 提交事务
+            JdbcUtils.commit();
+            return list.size()>0?list:null;
+        } catch (Exception e) {
+            // 异常回滚
+            JdbcUtils.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            // 关闭连接
+            JdbcUtils.release();
+        }
+    }
+}

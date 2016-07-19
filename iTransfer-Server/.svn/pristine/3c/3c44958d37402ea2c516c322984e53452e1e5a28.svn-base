@@ -1,0 +1,39 @@
+package cn.edu.sdust.cise.itransfer.web;
+
+import cn.edu.sdust.cise.itransfer.service.impl.CheckServiceImpl;
+import cn.edu.sdust.cise.itransfer.utils.WebUtils;
+import com.google.zxing.WriterException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+/**
+ * Created by 宇强 on 2016/6/7 0007.
+ */
+@WebServlet(name = "indexServlet")
+public class IndexServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String filename = "images/query/"+WebUtils.EnCodeFileName("1.gif");
+        try {
+            //反向登陆状态二维码生成
+            String queryImg = WebUtils.zxing("time="+System.currentTimeMillis(),filename,this.getServletContext().getRealPath("/"));
+            request.setAttribute("queryImg",queryImg);
+            request.setAttribute("filename",filename);
+
+            System.out.println("indexServlet");
+            //将当前的用户加入缓存
+            CheckServiceImpl.getInstance().setElement(filename,CheckServiceImpl.NULL,0);
+
+            request.getRequestDispatcher("/WEB-INF/jsp/index.jsp").forward(request,response);
+        } catch (WriterException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doPost(request,response);
+    }
+}

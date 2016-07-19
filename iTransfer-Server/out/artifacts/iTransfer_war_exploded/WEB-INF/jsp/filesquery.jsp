@@ -1,0 +1,102 @@
+<%--
+  Created by IntelliJ IDEA.
+  User: 宇强
+  Date: 2016/4/30 0030
+  Time: 16:18
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>您的文件</title>
+</head>
+<style>
+    body,ul,ol,li,p,h1,h2,h3,h4,h5,h6,form,fieldset,table,td,img,div,dl,dt,dd,input{margin:0;padding:0;}
+    body{font-size:12px;font-family:"微软雅黑";}
+    img{border:none;}
+    li{list-style:none;}
+    input,select,textarea{outline:none;}
+    textarea{resize:none;}
+    a{text-decoration:none;}
+    /*清浮动*/
+    .clearfix:after{content:"";display:block;clear:both;}
+    .clearfix{zoom:l;}
+    body{ background-image:url(image/bg.png);background-position:left top;background-repeat:repeat-y;background-size:100%;}
+    .header{ width:100%;height:100px;background:#09496c;}
+    .logo{ margin:0px auto;display:block;padding-top:5px;}
+    .content{ width:1080px;background:#000;margin:60px auto;background-color: rgba(0,0,0,0.5);border-radius:5px;overflow:auto;}
+
+    .sendbar,.receivebar{ width:1000px;height:580px;background:#f9fafc;margin:40px;overflow:hidden;}
+    .sendbar{ float:left;}
+    .receivebar{ float:right;}
+    .sendtop,.receivetop{ height:70px;width:1000px;background:#34a0fd;}
+    .sendtop p,.receivetop p{ display:block;width:420px;height:70px;text-align:center;font-size:36px;color:#fff;line-height:70px;background-repeat:no-repeat;background-position:100px 20px;float:left;}
+    .close{ background-image:url(image/close.png);width:70px;height:70px;float:right;}
+    .close:hover{ background-image:url(image/close_sel.png);}
+
+    .sendbtn{ display:block;background:#34a0fd;width:840px;height:60px;margin:400px auto;color:#fff;font-size:32px;line-height:60px;text-align:center;border-radius:10px;}
+    .sendbtn:hover{ background-color:#1782de;}
+
+    .listbar{ width:840px;height:320px;margin:40px 80px 0;float:left;}
+    .listfile{ float:left;margin:5px 20px;position:relative;cursor:pointer;}
+    .fileicon{ border:1px solid #37b9fc;padding:1px;width:96px;height:96px;}
+    .filename{ width:100px;height:40px;font-size:16px;line-height:40px;color:#6f6f6f;text-align:center;overflow:hidden;}
+    .deletebtn{width:100px;height:100px;background-image:url(image/delete_btn.png);position:absolute;top:0;left:0;}
+</style>
+<body>
+<div class="header">
+    <a href="${pageContext.request.contextPath}/indexServlet"><img src="image/logo.png" class="logo"></a>
+</div>
+<!--内容区-->
+<div class="content">
+    <div class="sendbar">
+        <div class="sendtop">
+            <p>您的文件们，请点击下载</p>
+            <a href="${pageContext.request.contextPath}/indexServlet" class="close"></a>
+        </div>
+        <ul class="listbar">
+            <c:forEach var="file" items="${files}">
+                <li class="listfile">
+                    <a href="javascript:download('${file.fid}','${file.storeName}','${file.filename}')"><img src="${file.imagePath}" class="fileicon"></a>
+                    <p class="filename">${file.filename}</p>
+                </li>
+            </c:forEach>
+        </ul>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    function download(fid,storeName1,filename1) {
+        var form = document.createElement("form");
+        form.action = '${pageContext.request.contextPath}/download';
+        form.method = "post";
+        form.style.display = "none";
+
+        var storeName = document.createElement("input");
+        storeName.name = 'storeName';
+        storeName.value = storeName1;
+        form.appendChild(storeName);
+
+        var filename = document.createElement("input");
+        filename.name = 'filename';
+        filename.value = filename1;
+        form.appendChild(filename);
+
+        var type = document.createElement("input");
+        type.name = 'type';
+        type.value = '${type}';
+        form.appendChild(type);
+
+        var fidEle = document.createElement("input");
+        fidEle.name = 'fid';
+        fidEle.value = fid;
+        form.appendChild(fidEle);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+</html>
